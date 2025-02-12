@@ -1,0 +1,39 @@
+# Core dependencies
+typer==0.9.0
+python-dotenv==1.0.0
+openai>=1.3.0,<2.0.0
+PyGithub==2.1.1
+Jinja2==3.1.2
+
+# LaTeX and PDF generation
+PyLaTeX==1.4.1; python_version < '3.12'  # Only install for Python versions below 3.12
+
+# Social Media Integration
+tweepy==4.14.0
+linkedin-api==2.0.3  # Modern LinkedIn API client
+facebook-sdk==3.1.0
+
+# Logging and Error Handling
+rich==13.3.1
+structlog==23.1.0
+
+# Testing and Development
+pytest==7.4.0
+pytest-cov==4.1.0
+black==23.3.0
+flake8==6.1.0
+mypy==1.5.1
+
+# Documentation
+mkdocs==1.5.2
+mkdocs-material==9.2.0
+
+# Utilities
+requests==2.31.0
+pyyaml==6.0.1
+python-slugify==8.0.1
+tenacity==8.2.2
+
+# Additional utilities
+tqdm==4.66.1
+packaging==23.2
