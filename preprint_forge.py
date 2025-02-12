@@ -82,26 +82,43 @@ class AIPreprintGenerator:
                        setup_pages: bool = False,
                        post_social: bool = False,
                        create_markdown: bool = True,
-                       create_latex: bool = True):
+                       create_latex: bool = True,
+                       author: str = "",
+                       institution: str = "",
+                       department: str = "",
+                       email: str = "",
+                       date_str: str = ""):
         """
         Main method to generate the paper and handle all related tasks.
         Defaults to creating BOTH Markdown and LaTeX versions,
         attempts PDF compilation if LaTeX is created,
-        and creates a README.
+        and creates a README unless one exists.
         """
         try:
             # Generate textual content with OpenAI in Markdown
             paper_content_md = (
-                self._generate_content(prompt, output_format="markdown")
-                if create_markdown
-                else None
+                self._generate_content(
+                    prompt,
+                    output_format="markdown",
+                    author=author,
+                    institution=institution,
+                    department=department,
+                    email=email,
+                    date_str=date_str
+                ) if create_markdown else None
             )
 
-            # Generate LaTeX content (arXiv style, no GPT disclaimers)
+            # Generate LaTeX content
             paper_content_latex = (
-                self._generate_content(prompt, output_format="latex")
-                if create_latex
-                else None
+                self._generate_content(
+                    prompt,
+                    output_format="latex",
+                    author=author,
+                    institution=institution,
+                    department=department,
+                    email=email,
+                    date_str=date_str
+                ) if create_latex else None
             )
 
             # Create project directory and files
@@ -115,11 +132,11 @@ class AIPreprintGenerator:
             if create_latex and paper_content_latex:
                 self._generate_pdf_from_latex(project_dir, paper_name)
 
-            # Create a README based on the research
-            self._create_readme(project_dir, prompt)
+            # Create a README unless it already exists
+            self._create_readme_if_missing(project_dir, prompt)
 
-            # Initialize or update git repository on GitHub
-            repo_url = self._setup_github_repo(project_dir, paper_name)
+            # Initialize or update git repository on GitHub (with AI-generated description)
+            repo_url = self._setup_github_repo(project_dir, paper_name, prompt)
 
             # Setup GitHub Pages if requested
             if setup_pages:
@@ -139,14 +156,32 @@ class AIPreprintGenerator:
             logger.error(f"Error generating paper: {e}")
             raise
 
-    def _generate_content(self, prompt: str, output_format: str = "markdown") -> str:
+    def _generate_content(self,
+                          prompt: str,
+                          output_format: str = "markdown",
+                          author: str = "",
+                          institution: str = "",
+                          department: str = "",
+                          email: str = "",
+                          date_str: str = "") -> str:
         """
         Use OpenAI's ChatCompletion to generate content.
-        - For LaTeX, produce an arXiv-like document style that compiles under pdfTeX.
-        - For Markdown, produce a structured Markdown document.
-        - DO NOT include disclaimers or references to ChatGPT.
 
-        After generation, we remove any code fences (```latex, ```).
+        For LaTeX, produce an arXiv-like document style that compiles under pdfTeX.
+        Include a title/author/date block:
+            \\title{...}
+            \\author{Author \\ Department \\ Institution \\ Email}
+            \\date{...}
+
+        For Markdown, produce a structured doc with frontmatter:
+            # Title
+            **Author**: ...
+            **Institution**: ...
+            **Department**: ...
+            **Email**: ...
+            **Date**: ...
+
+        Do not include disclaimers or references to GPT/ChatGPT.
         """
         try:
             logger.info(f"Generating {output_format} content from OpenAI...")
@@ -157,20 +192,35 @@ class AIPreprintGenerator:
             )
 
             if output_format == "latex":
+                # Instruct GPT to produce a LaTeX doc with user-specified frontmatter
                 user_instruction = (
-                    f"Generate a well-formatted LaTeX document for a research paper based on:\n{prompt}\n"
-                    "Use an arXiv-like style that compiles under pdfTeX, including:\n"
-                    "  - \\documentclass{article} or a standard arXiv style package\n"
-                    "  - Minimal packages (e.g., geometry, amsmath, amssymb, graphicx)\n"
-                    "  - Standard sections (Abstract, Introduction, Methods, Results, Conclusion)\n"
-                    "Do not include any disclaimers or references to GPT or ChatGPT in the text. "
-                    "Return only the LaTeX code (no extra explanations). Ensure valid LaTeX syntax for pdfTeX."
+                    "Generate a well-formatted LaTeX document for a research paper based on:\n"
+                    f"{prompt}\n\n"
+                    "Use an arXiv-like style that compiles under pdfTeX.\n"
+                    "At the top of the document, please include:\n"
+                    "\\documentclass{article}\n"
+                    "\\usepackage[margin=1in]{geometry}\n"
+                    "\\usepackage{amsmath,amssymb,graphicx}\n"
+                    f"\\title{{A Short Descriptive Title}}\n"
+                    f"\\author{{{author} \\\\ {department} \\\\ {institution} \\\\ {email}}}\n"
+                    f"\\date{{{date_str}}}\n\n"
+                    "Then add standard sections: Abstract, Introduction, Methods, Results, Conclusion.\n"
+                    "Do not reference GPT or disclaimers in the text. Output only valid LaTeX."
                 )
             else:
+                # Markdown version with a heading block
                 user_instruction = (
-                    f"Generate a Markdown research paper based on the following prompt:\n{prompt}\n"
-                    "Include sections like Abstract, Introduction, Methods, Results, and Conclusion.\n"
-                    "Do not include any disclaimers or references to GPT or ChatGPT in the text."
+                    "Generate a structured Markdown research paper based on:\n"
+                    f"{prompt}\n\n"
+                    "At the top, include a title and author block:\n"
+                    "# A Short Descriptive Title\n"
+                    f"**Author**: {author}\n"
+                    f"**Department**: {department}\n"
+                    f"**Institution**: {institution}\n"
+                    f"**Email**: {email}\n"
+                    f"**Date**: {date_str}\n\n"
+                    "Then include standard sections: Abstract, Introduction, Methods, Results, Conclusion.\n"
+                    "Do not reference GPT or disclaimers. Return only valid Markdown."
                 )
 
             response = client.chat.completions.create(
@@ -184,7 +234,7 @@ class AIPreprintGenerator:
             )
             generated_text = response.choices[0].message.content.strip()
 
-            # Remove any markdown code fences, e.g. ``` or ```latex
+            # Remove any markdown code fences (```...```)
             generated_text = re.sub(r'```[^\n]*\n?', '', generated_text)
 
             logger.info("Content generation complete.")
@@ -203,6 +253,7 @@ class AIPreprintGenerator:
         Uses the same base `paper_name` for the folder and for both .md and .tex.
         Returns (project_dir, paper_name).
         """
+        # Create a filesystem-friendly paper name
         paper_name = re.sub(r'\W+', '_', prompt).strip("_")
         if not paper_name:
             paper_name = f"Paper_{int(time.time())}"
@@ -210,13 +261,13 @@ class AIPreprintGenerator:
         project_dir = self.base_dir / paper_name
         project_dir.mkdir(exist_ok=True)
 
-        # Save Markdown content
+        # Save Markdown content (if any)
         if md_content:
             md_file = project_dir / f"{paper_name}.md"
             md_file.write_text(md_content, encoding="utf-8")
             logger.info(f"Markdown file created at {md_file}")
 
-        # Save LaTeX content
+        # Save LaTeX content (if any)
         if latex_content:
             tex_file = project_dir / f"{paper_name}.tex"
             tex_file.write_text(latex_content, encoding="utf-8")
@@ -235,20 +286,25 @@ class AIPreprintGenerator:
                 logger.warning(f"{paper_name}.tex not found; skipping PDF generation.")
                 return
 
-            # Example using system calls to pdflatex (must have pdflatex installed locally)
             subprocess.run(["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True)
-            # Optionally run again to fix cross-references, bibliographies, etc.
+            # Optionally run again to fix cross-references, etc.
             subprocess.run(["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True)
             logger.info("PDF generation complete.")
 
         except Exception as e:
             logger.error(f"Error generating PDF from LaTeX: {e}")
 
-    def _create_readme(self, project_dir: Path, prompt: str):
+    def _create_readme_if_missing(self, project_dir: Path, prompt: str):
         """
-        Generate a README.md based on the research prompt.
+        Generate a README.md based on the research prompt,
+        unless README.md already exists.
         """
-        logger.info("Generating README.md...")
+        readme_file = project_dir / "README.md"
+        if readme_file.exists():
+            logger.info("README.md already exists; skipping creation.")
+            return
+
+        logger.info("Generating new README.md...")
         try:
             response = client.chat.completions.create(
                 model=self.model,
@@ -268,18 +324,53 @@ class AIPreprintGenerator:
             )
             readme_text = response.choices[0].message.content.strip()
 
-            readme_file = project_dir / "README.md"
             readme_file.write_text(readme_text, encoding="utf-8")
             logger.info(f"README.md created at {readme_file}")
 
         except Exception as e:
             logger.error(f"Error generating README: {e}")
 
-    def _setup_github_repo(self, project_dir: Path, paper_name: str):
+    def _generate_repo_description(self, prompt: str) -> str:
+        """
+        Generate a short (~250 characters) AI-generated GitHub repo description
+        based on the provided prompt. No disclaimers or GPT references.
+        """
+        try:
+            system_instruction = (
+                "You are an AI that writes concise text. "
+                "Do not include disclaimers or references to ChatGPT."
+            )
+            user_instruction = (
+                "Generate a short description (max 250 characters) for a GitHub repository "
+                f"about a research paper based on the prompt:\n\n{prompt}\n\n"
+                "Do not exceed 250 characters. No GPT disclaimers."
+            )
+
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_instruction}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            about_text = response.choices[0].message.content.strip()
+            # Ensure we don't exceed 250 chars
+            about_text = about_text[:250]
+            return about_text
+
+        except Exception as e:
+            logger.error(f"Error generating repo description: {e}")
+            # Fallback if GPT fails
+            return "AI-generated research paper repository"
+
+    def _setup_github_repo(self, project_dir: Path, paper_name: str, prompt: str):
         """
         Check if GitHub repo with paper_name exists:
           - If it does, do NOT create a new one, just push changes.
-          - Otherwise, create a new repo.
+          - Otherwise, create a new repo (public or private based on .env).
+          - Add an AI-generated short 'about' description (max 250 chars).
         Returns the repository URL.
         """
         logger.info(f"Checking/Creating GitHub repository: {paper_name}")
@@ -295,17 +386,29 @@ class AIPreprintGenerator:
             logger.info(f"Repo '{paper_name}' already exists. Skipping creation...")
             repo_url = existing_repo.clone_url
             self._commit_and_push(project_dir, repo_url, update_only=True)
+            return existing_repo.html_url
         else:
             try:
-                repo = user.create_repo(paper_name, private=True)
+                # Determine if the repository should be public or private (default: private)
+                make_repo_public = os.getenv("MAKE_REPO_PUBLIC", "false").lower() == "true"
+                about_section = self._generate_repo_description(prompt)
+
+                repo = user.create_repo(
+                    paper_name,
+                    private=not make_repo_public,
+                    description=about_section
+                )
                 repo_url = repo.clone_url
-                logger.info(f"Repository created at {repo_url}")
+                logger.info(
+                    f"Repository created at {repo_url} "
+                    f"({'public' if make_repo_public else 'private'})"
+                )
                 self._commit_and_push(project_dir, repo_url, update_only=False)
+                return repo.html_url
+
             except Exception as e:
                 logger.error(f"Error creating GitHub repo: {e}")
                 raise
-
-        return existing_repo.html_url if existing_repo else repo.html_url
 
     def _commit_and_push(self, project_dir: Path, repo_url: str, update_only: bool = False):
         """
@@ -369,8 +472,29 @@ def run_generation(prompt: str,
                    setup_pages: bool,
                    post_social: bool,
                    create_markdown: bool,
-                   create_latex: bool):
-    """Main function to handle the paper generation process."""
+                   create_latex: bool,
+                   author: str,
+                   institution: str,
+                   department: str,
+                   email: str,
+                   date_str: str):
+    """
+    Main function to handle the paper generation process.
+    Grabs any missing info from environment variables as fallback.
+    """
+    # Fallback to .env if not provided
+    if not author:
+        author = os.getenv("PAPER_AUTHOR", "")
+    if not institution:
+        institution = os.getenv("PAPER_INSTITUTION", "")
+    if not department:
+        department = os.getenv("PAPER_DEPARTMENT", "")
+    if not email:
+        email = os.getenv("PAPER_EMAIL", "")
+    if not date_str:
+        # default to today's date if none specified
+        date_str = os.getenv("PAPER_DATE", datetime.now().strftime("%B %d, %Y"))
+
     try:
         generator = AIPreprintGenerator()
         result = generator.generate_paper(
@@ -378,7 +502,12 @@ def run_generation(prompt: str,
             setup_pages=setup_pages,
             post_social=post_social,
             create_markdown=create_markdown,
-            create_latex=create_latex
+            create_latex=create_latex,
+            author=author,
+            institution=institution,
+            department=department,
+            email=email,
+            date_str=date_str
         )
 
         logger.info(f"Successfully created paper '{result['paper_name']}' at {result['repo_url']}")
@@ -402,14 +531,23 @@ def generate(
     setup_pages: bool = typer.Option(False, "--pages/--no-pages", help="Setup GitHub Pages website"),
     post_social: bool = typer.Option(False, "--social/--no-social", help="Post to social media"),
     create_markdown: bool = typer.Option(None, "--md/--no-md", help="Generate Markdown version"),
-    create_latex: bool = typer.Option(None, "--latex/--no-latex", help="Generate LaTeX version")
+    create_latex: bool = typer.Option(None, "--latex/--no-latex", help="Generate LaTeX version"),
+    author: str = typer.Option(None, "--author", help="Paper author name"),
+    institution: str = typer.Option(None, "--institution", help="Author institution"),
+    department: str = typer.Option(None, "--department", help="Author department"),
+    email: str = typer.Option(None, "--email", help="Author email"),
+    date_str: str = typer.Option(None, "--date", help="Date to show on the paper")
 ):
     """
     Generate a research paper and create/update a GitHub repository.
     By default, both Markdown and LaTeX are generated (via .env settings),
     with PDF compiled from LaTeX in an arXiv style, with no GPT disclaimers.
+
+    You can specify:
+    --author, --institution, --department, --email, --date
+    either via CLI or use .env fallback.
     """
-    # Environment-based defaults
+    # Environment-based defaults for Markdown/LaTeX toggles
     if create_markdown is None:
         create_markdown = os.getenv("CREATE_MARKDOWN_BY_DEFAULT", "true").lower() == "true"
     if create_latex is None:
@@ -418,7 +556,18 @@ def generate(
     setup_pages = setup_pages if setup_pages is not None else os.getenv("ENABLE_GITHUB_PAGES", "false").lower() == "true"
     post_social = post_social if post_social is not None else os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
 
-    run_generation(prompt, setup_pages, post_social, create_markdown, create_latex)
+    run_generation(
+        prompt=prompt,
+        setup_pages=setup_pages,
+        post_social=post_social,
+        create_markdown=create_markdown,
+        create_latex=create_latex,
+        author=author,
+        institution=institution,
+        department=department,
+        email=email,
+        date_str=date_str
+    )
 
 @app.command()
 def configure():
