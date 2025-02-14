@@ -2,18 +2,20 @@ import typer
 import os
 import openai
 from openai import OpenAI
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-
 import subprocess
 import re
 from pathlib import Path
 from github import Github
 import logging
 from dotenv import load_dotenv
-import shutil
 from datetime import datetime
 import time
+
+# Add new import for social media
+from social_media import SocialMediaManager
+
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 
 # Initialize Typer app
 app = typer.Typer(add_completion=False)
@@ -22,39 +24,6 @@ app = typer.Typer(add_completion=False)
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-class SocialMediaManager:
-    """Placeholder class; fill in actual social media logic if needed."""
-    def __init__(self):
-        self.twitter_enabled = os.getenv("AUTO_POST_TWITTER", "false").lower() == "true"
-        self.linkedin_enabled = os.getenv("AUTO_POST_LINKEDIN", "false").lower() == "true"
-        self.facebook_enabled = os.getenv("AUTO_POST_FACEBOOK", "false").lower() == "true"
-        self.post_delay = int(os.getenv("SOCIAL_POST_DELAY", "300"))
-
-        if self.twitter_enabled:
-            self.setup_twitter()
-        if self.linkedin_enabled:
-            self.setup_linkedin()
-        if self.facebook_enabled:
-            self.setup_facebook()
-
-    def setup_twitter(self):
-        pass
-
-    def setup_linkedin(self):
-        pass
-
-    def setup_facebook(self):
-        pass
-
-    def post_to_twitter(self, message: str):
-        pass
-
-    def post_to_linkedin(self, message: str):
-        pass
-
-    def post_to_facebook(self, message: str):
-        pass
 
 class AIPreprintGenerator:
     def __init__(self):
@@ -76,6 +45,19 @@ class AIPreprintGenerator:
             if os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
             else None
         )
+
+    def _handle_social_media(self, prompt: str, paper_name: str, repo_url: str):
+        """Post details about the new paper to enabled social media platforms."""
+        if not self.social_media:
+            return
+
+        message = f"New AI-generated paper '{paper_name}' is now available! Check it out: {repo_url}"
+        logger.info("Posting to social media...")
+        try:
+            self.social_media.post_update(message)
+            logger.info("Social media posts complete.")
+        except Exception as e:
+            logger.error(f"Error posting to social media: {e}")
 
     def generate_paper(self,
                        prompt: str,
@@ -447,26 +429,6 @@ class AIPreprintGenerator:
             logger.error(f"Error setting up GitHub Pages: {e}")
             raise
 
-    def _handle_social_media(self, prompt: str, paper_name: str, repo_url: str):
-        """
-        Post details about the new paper to enabled social media platforms.
-        """
-        message = f"New AI-generated paper '{paper_name}' is now available! Check it out: {repo_url}"
-        logger.info("Posting to social media...")
-        try:
-            if self.social_media.twitter_enabled:
-                self.social_media.post_to_twitter(message)
-                time.sleep(self.social_media.post_delay)
-            if self.social_media.linkedin_enabled:
-                self.social_media.post_to_linkedin(message)
-                time.sleep(self.social_media.post_delay)
-            if self.social_media.facebook_enabled:
-                self.social_media.post_to_facebook(message)
-                time.sleep(self.social_media.post_delay)
-
-            logger.info("Social media posts complete.")
-        except Exception as e:
-            logger.error(f"Error posting to social media: {e}")
 
 def run_generation(prompt: str,
                    setup_pages: bool,

@@ -1,3 +1,4 @@
 .env
 ai_preprints/
 .venv
+__pycache__
