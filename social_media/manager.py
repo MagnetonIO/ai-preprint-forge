@@ -13,38 +13,42 @@ class SocialMediaManager:
     """Manages multiple social media platform implementations."""
 
     def __init__(self):
-        """Initialize all platform instances and check global enable flag."""
-        self.enabled = os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
+        """Initialize platform instances based on configuration."""
         self.post_delay = int(os.getenv("SOCIAL_POST_DELAY", "300"))
-
-        # Initialize all platforms
         self.platforms: List[SocialMediaPlatform] = []
 
-        if self.enabled:
-            # Only create platform instances if social media is globally enabled
-            self.platforms.extend([
-                TwitterPlatform(),
-                LinkedInPlatform(),
-                FacebookPlatform()
-            ])
-            # Set up enabled platforms
-            self._setup_platforms()
+        # Initialize platforms if they're individually enabled
+        # or if global social media is enabled
+        global_enabled = os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
+
+        # Twitter
+        if global_enabled or os.getenv("AUTO_POST_TWITTER", "false").lower() == "true":
+            self.platforms.append(TwitterPlatform())
+
+        # LinkedIn
+        if global_enabled or os.getenv("AUTO_POST_LINKEDIN", "false").lower() == "true":
+            self.platforms.append(LinkedInPlatform())
+
+        # Facebook (checks its own FACEBOOK_POST_TO_PAGE setting)
+        if global_enabled or os.getenv("FACEBOOK_POST_TO_PAGE", "false").lower() == "true":
+            self.platforms.append(FacebookPlatform())
+
+        # Set up enabled platforms
+        self._setup_platforms()
 
     def _setup_platforms(self):
         """Initialize all enabled platforms."""
         for platform in self.platforms:
             if platform.enabled:
-                platform.setup()
+                success = platform.setup()
+                if not success:
+                    logger.error(f"Failed to set up {platform.__class__.__name__}")
 
     def post_update(self, message: str) -> bool:
         """
         Post update to all configured platforms.
         Returns True if at least one platform succeeds.
         """
-        if not self.enabled:
-            logger.info("Social media posting is disabled")
-            return False
-
         if not self.platforms:
             logger.warning("No social media platforms configured")
             return False
@@ -53,7 +57,7 @@ class SocialMediaManager:
         active_platforms = [p for p in self.platforms if p.enabled and p.configured]
 
         if not active_platforms:
-            logger.warning("No active social media platforms found")
+            logger.warning("No active social media platforms found. Check your platform settings and tokens.")
             return False
 
         for platform in active_platforms:
