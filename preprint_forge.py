@@ -27,8 +27,10 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class NameTracker:
     """Handles tracking and reusing paper/repository names based on prompts."""
+
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
         self.name_cache_file = base_dir / "name_cache.json"
@@ -38,7 +40,7 @@ class NameTracker:
         """Load existing name mappings from cache file."""
         try:
             if self.name_cache_file.exists():
-                with open(self.name_cache_file, 'r', encoding='utf-8') as f:
+                with open(self.name_cache_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             return {}
         except Exception as e:
@@ -48,15 +50,15 @@ class NameTracker:
     def _save_cache(self):
         """Save current name mappings to cache file."""
         try:
-            with open(self.name_cache_file, 'w', encoding='utf-8') as f:
+            with open(self.name_cache_file, "w", encoding="utf-8") as f:
                 json.dump(self.prompt_to_name, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving name cache: {e}")
 
     def _generate_prompt_key(self, prompt: str) -> str:
         """Generate a stable key for a prompt."""
-        cleaned_prompt = re.sub(r'\s+', ' ', prompt.strip().lower())
-        return hashlib.md5(cleaned_prompt.encode('utf-8')).hexdigest()
+        cleaned_prompt = re.sub(r"\s+", " ", prompt.strip().lower())
+        return hashlib.md5(cleaned_prompt.encode("utf-8")).hexdigest()
 
     def get_existing_name(self, prompt: str) -> Optional[str]:
         """Get existing name for a prompt if it exists."""
@@ -73,22 +75,26 @@ class NameTracker:
         """Check if a name exists for this prompt."""
         return self._generate_prompt_key(prompt) in self.prompt_to_name
 
+
 async def generate_paper_name(client, prompt: str) -> str:
     """Generate a concise, filesystem-friendly paper name."""
     try:
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": (
-                    "Generate a concise, meaningful name for a research paper. "
-                    "Use only letters, numbers, and underscores. "
-                    "Maximum 30 characters. No spaces. "
-                    "Format: word1_word2_word3"
-                )},
-                {"role": "user", "content": f"Research topic: {prompt}"}
+                {
+                    "role": "system",
+                    "content": (
+                        "Generate a concise, meaningful name for a research paper. "
+                        "Use only letters, numbers, and underscores. "
+                        "Maximum 30 characters. No spaces. "
+                        "Format: word1_word2_word3"
+                    ),
+                },
+                {"role": "user", "content": f"Research topic: {prompt}"},
             ],
             max_tokens=50,
-            temperature=0.7
+            temperature=0.7,
         )
 
         paper_name = response.choices[0].message.content.strip()
@@ -99,21 +105,23 @@ async def generate_paper_name(client, prompt: str) -> str:
         logger.error(f"Error generating paper name with AI: {e}")
         return create_fallback_name(prompt)
 
+
 def clean_name(name: str) -> str:
     """Clean and format a name to be filesystem-friendly and under 30 chars."""
-    clean = re.sub(r'[^\w\s]', '', name)
-    clean = clean.replace(' ', '_').lower()
-    clean = re.sub(r'_+', '_', clean)
+    clean = re.sub(r"[^\w\s]", "", name)
+    clean = clean.replace(" ", "_").lower()
+    clean = re.sub(r"_+", "_", clean)
 
     if len(clean) > 30:
-        last_underscore = clean.rfind('_', 0, 30)
+        last_underscore = clean.rfind("_", 0, 30)
         if last_underscore != -1:
             clean = clean[:last_underscore]
         else:
             clean = clean[:30]
 
-    clean = clean.rstrip('_')
+    clean = clean.rstrip("_")
     return clean
+
 
 def create_fallback_name(prompt: str) -> str:
     """Create a fallback name if AI generation fails."""
@@ -123,6 +131,7 @@ def create_fallback_name(prompt: str) -> str:
     if len(final_name) > 30:
         final_name = f"{fallback[:25]}_{timestamp}"
     return final_name
+
 
 class AIPreprintGenerator:
     def __init__(self):
@@ -144,17 +153,19 @@ class AIPreprintGenerator:
             else None
         )
 
-    async def generate_paper(self,
-                     prompt: str,
-                     setup_pages: bool = False,
-                     post_social: bool = False,
-                     create_markdown: bool = True,
-                     create_latex: bool = True,
-                     author: str = "",
-                     institution: str = "",
-                     department: str = "",
-                     email: str = "",
-                     date_str: str = ""):
+    async def generate_paper(
+        self,
+        prompt: str,
+        setup_pages: bool = False,
+        post_social: bool = False,
+        create_markdown: bool = True,
+        create_latex: bool = True,
+        author: str = "",
+        institution: str = "",
+        department: str = "",
+        email: str = "",
+        date_str: str = "",
+    ):
         """Main method to generate the paper and handle all related tasks."""
         try:
             paper_content_md = (
@@ -165,8 +176,10 @@ class AIPreprintGenerator:
                     institution=institution,
                     department=department,
                     email=email,
-                    date_str=date_str
-                ) if create_markdown else None
+                    date_str=date_str,
+                )
+                if create_markdown
+                else None
             )
 
             paper_content_latex = (
@@ -177,14 +190,14 @@ class AIPreprintGenerator:
                     institution=institution,
                     department=department,
                     email=email,
-                    date_str=date_str
-                ) if create_latex else None
+                    date_str=date_str,
+                )
+                if create_latex
+                else None
             )
 
             project_dir, paper_name = await self._setup_project(
-                prompt,
-                md_content=paper_content_md,
-                latex_content=paper_content_latex
+                prompt, md_content=paper_content_md, latex_content=paper_content_latex
             )
 
             if create_latex and paper_content_latex:
@@ -201,23 +214,25 @@ class AIPreprintGenerator:
                 self._handle_social_media(prompt, paper_name, repo_url)
 
             return {
-                'paper_name': paper_name,
-                'repo_url': repo_url,
-                'project_dir': project_dir
+                "paper_name": paper_name,
+                "repo_url": repo_url,
+                "project_dir": project_dir,
             }
 
         except Exception as e:
             logger.error(f"Error generating paper: {e}")
             raise
 
-    def _generate_content(self,
-                          prompt: str,
-                          output_format: str = "markdown",
-                          author: str = "",
-                          institution: str = "",
-                          department: str = "",
-                          email: str = "",
-                          date_str: str = "") -> str:
+    def _generate_content(
+        self,
+        prompt: str,
+        output_format: str = "markdown",
+        author: str = "",
+        institution: str = "",
+        department: str = "",
+        email: str = "",
+        date_str: str = "",
+    ) -> str:
         """Generate content using OpenAI."""
         try:
             logger.info(f"Generating {output_format} content from OpenAI...")
@@ -261,13 +276,13 @@ class AIPreprintGenerator:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": user_instruction}
+                    {"role": "user", "content": user_instruction},
                 ],
                 max_tokens=2000,
-                temperature=0.7
+                temperature=0.7,
             )
             generated_text = response.choices[0].message.content.strip()
-            generated_text = re.sub(r'```[^\n]*\n?', '', generated_text)
+            generated_text = re.sub(r"```[^\n]*\n?", "", generated_text)
 
             logger.info("Content generation complete.")
             return generated_text
@@ -276,7 +291,9 @@ class AIPreprintGenerator:
             logger.error(f"Error generating content with OpenAI: {e}")
             raise
 
-    async def _setup_project(self, prompt: str, md_content: str = None, latex_content: str = None):
+    async def _setup_project(
+        self, prompt: str, md_content: str = None, latex_content: str = None
+    ):
         """Create or update project directory using tracked names."""
         # Get existing name or generate new one
         existing_name = self.name_tracker.get_existing_name(prompt)
@@ -296,7 +313,10 @@ class AIPreprintGenerator:
             md_file = project_dir / f"{paper_name}.md"
             if md_file.exists():
                 logger.info(f"Markdown file already exists at {md_file}")
-                recreate = typer.confirm("Markdown file already exists. Would you like to recreate it?", default=False)
+                recreate = typer.confirm(
+                    "Markdown file already exists. Would you like to recreate it?",
+                    default=False,
+                )
                 if recreate:
                     md_file.write_text(md_content, encoding="utf-8")
                     logger.info(f"Updated Markdown file at {md_file}")
@@ -311,7 +331,10 @@ class AIPreprintGenerator:
             tex_file = project_dir / f"{paper_name}.tex"
             if tex_file.exists():
                 logger.info(f"LaTeX file already exists at {tex_file}")
-                recreate = typer.confirm("LaTeX file already exists. Would you like to recreate it?", default=False)
+                recreate = typer.confirm(
+                    "LaTeX file already exists. Would you like to recreate it?",
+                    default=False,
+                )
                 if recreate:
                     tex_file.write_text(latex_content, encoding="utf-8")
                     logger.info(f"Updated LaTeX file at {tex_file}")
@@ -332,8 +355,12 @@ class AIPreprintGenerator:
                 logger.warning(f"{paper_name}.tex not found; skipping PDF generation.")
                 return
 
-            subprocess.run(["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True)
-            subprocess.run(["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True)
+            subprocess.run(
+                ["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True
+            )
+            subprocess.run(
+                ["pdflatex", f"{paper_name}.tex"], cwd=project_dir, check=True
+            )
             logger.info("PDF generation complete.")
 
         except Exception as e:
@@ -351,18 +378,21 @@ class AIPreprintGenerator:
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "Write a concise README for a research project. No disclaimers."},
+                    {
+                        "role": "system",
+                        "content": "Write a concise README for a research project. No disclaimers.",
+                    },
                     {
                         "role": "user",
                         "content": (
                             f"Based on the research prompt below, produce a short summary for a README:\n\n{prompt}\n\n"
                             "Include an overview, main sections, and what the repo contains. "
                             "Do not include disclaimers or references to GPT or ChatGPT."
-                        )
-                    }
+                        ),
+                    },
                 ],
                 max_tokens=500,
-                temperature=0.7
+                temperature=0.7,
             )
             readme_text = response.choices[0].message.content.strip()
             readme_file.write_text(readme_text, encoding="utf-8")
@@ -392,13 +422,13 @@ class AIPreprintGenerator:
             return existing_repo.html_url
         else:
             try:
-                make_repo_public = os.getenv("MAKE_REPO_PUBLIC", "false").lower() == "true"
+                make_repo_public = (
+                    os.getenv("MAKE_REPO_PUBLIC", "false").lower() == "true"
+                )
                 about_section = self._generate_repo_description(prompt)
 
                 repo = user.create_repo(
-                    paper_name,
-                    private=not make_repo_public,
-                    description=about_section
+                    paper_name, private=not make_repo_public, description=about_section
                 )
                 repo_url = repo.clone_url
                 logger.info(f"Created new repo: {paper_name}")
@@ -409,21 +439,33 @@ class AIPreprintGenerator:
                 logger.error(f"Error creating GitHub repo: {e}")
                 raise
 
-    def _commit_and_push(self, project_dir: Path, repo_url: str, update_only: bool = False):
+    def _commit_and_push(
+        self, project_dir: Path, repo_url: str, update_only: bool = False
+    ):
         """Handle Git operations for new or existing repos."""
         try:
             git_folder = project_dir / ".git"
             if not git_folder.exists():
                 logger.info("Initializing new Git repository...")
                 subprocess.run(["git", "init"], cwd=project_dir, check=True)
-                subprocess.run(["git", "remote", "add", "origin", repo_url], cwd=project_dir, check=True)
-                subprocess.run(["git", "checkout", "-b", "main"], cwd=project_dir, check=True)
+                subprocess.run(
+                    ["git", "remote", "add", "origin", repo_url],
+                    cwd=project_dir,
+                    check=True,
+                )
+                subprocess.run(
+                    ["git", "checkout", "-b", "main"], cwd=project_dir, check=True
+                )
 
             subprocess.run(["git", "add", "."], cwd=project_dir, check=True)
             commit_msg = "Update content" if update_only else "Initial commit"
-            subprocess.run(["git", "commit", "-m", commit_msg], cwd=project_dir, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", commit_msg], cwd=project_dir, check=True
+            )
             subprocess.run(["git", "branch", "-M", "main"], cwd=project_dir, check=True)
-            subprocess.run(["git", "push", "-u", "origin", "main"], cwd=project_dir, check=True)
+            subprocess.run(
+                ["git", "push", "-u", "origin", "main"], cwd=project_dir, check=True
+            )
             logger.info("Git push successful")
 
         except Exception as e:
@@ -447,10 +489,10 @@ class AIPreprintGenerator:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": user_instruction}
+                    {"role": "user", "content": user_instruction},
                 ],
                 max_tokens=200,
-                temperature=0.7
+                temperature=0.7,
             )
             about_text = response.choices[0].message.content.strip()[:250]
             return about_text
@@ -482,16 +524,19 @@ class AIPreprintGenerator:
         except Exception as e:
             logger.error(f"Error posting to social media: {e}")
 
-async def run_generation(prompt: str,
-                      setup_pages: bool,
-                      post_social: bool,
-                      create_markdown: bool,
-                      create_latex: bool,
-                      author: str,
-                      institution: str,
-                      department: str,
-                      email: str,
-                      date_str: str):
+
+async def run_generation(
+    prompt: str,
+    setup_pages: bool,
+    post_social: bool,
+    create_markdown: bool,
+    create_latex: bool,
+    author: str,
+    institution: str,
+    department: str,
+    email: str,
+    date_str: str,
+):
     """Main function to handle the paper generation process."""
     # Fallback to .env if not provided
     if not author:
@@ -517,14 +562,20 @@ async def run_generation(prompt: str,
 
             if md_exists and create_markdown:
                 logger.info("Markdown file already exists")
-                create_markdown = typer.confirm("Markdown file exists. Generate new version?", default=False)
+                create_markdown = typer.confirm(
+                    "Markdown file exists. Generate new version?", default=False
+                )
 
             if tex_exists and create_latex:
                 logger.info("LaTeX file already exists")
-                create_latex = typer.confirm("LaTeX file exists. Generate new version?", default=False)
+                create_latex = typer.confirm(
+                    "LaTeX file exists. Generate new version?", default=False
+                )
 
             if not (create_markdown or create_latex):
-                logger.info("No new files to generate. Proceeding with repository operations.")
+                logger.info(
+                    "No new files to generate. Proceeding with repository operations."
+                )
 
         result = await generator.generate_paper(
             prompt=prompt,
@@ -536,10 +587,12 @@ async def run_generation(prompt: str,
             institution=institution,
             department=department,
             email=email,
-            date_str=date_str
+            date_str=date_str,
         )
 
-        logger.info(f"Successfully created/updated paper '{result['paper_name']}' at {result['repo_url']}")
+        logger.info(
+            f"Successfully created/updated paper '{result['paper_name']}' at {result['repo_url']}"
+        )
         logger.info(f"Local directory: {result['project_dir']}")
 
         return result
@@ -548,53 +601,77 @@ async def run_generation(prompt: str,
         logger.error(f"Error in generation process: {e}")
         raise typer.Exit(1)
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """Callback to handle the default command."""
     if ctx.invoked_subcommand is None:
         ctx.invoke(generate)
 
+
 @app.command()
 def generate(
     prompt: str = typer.Argument(..., help="Research prompt to generate paper from"),
-    setup_pages: bool = typer.Option(False, "--pages/--no-pages", help="Setup GitHub Pages website"),
-    post_social: bool = typer.Option(False, "--social/--no-social", help="Post to social media"),
-    create_markdown: bool = typer.Option(None, "--md/--no-md", help="Generate Markdown version"),
-    create_latex: bool = typer.Option(None, "--latex/--no-latex", help="Generate LaTeX version"),
+    setup_pages: bool = typer.Option(
+        False, "--pages/--no-pages", help="Setup GitHub Pages website"
+    ),
+    post_social: bool = typer.Option(
+        False, "--social/--no-social", help="Post to social media"
+    ),
+    create_markdown: bool = typer.Option(
+        None, "--md/--no-md", help="Generate Markdown version"
+    ),
+    create_latex: bool = typer.Option(
+        None, "--latex/--no-latex", help="Generate LaTeX version"
+    ),
     author: str = typer.Option(None, "--author", help="Paper author name"),
     institution: str = typer.Option(None, "--institution", help="Author institution"),
     department: str = typer.Option(None, "--department", help="Author department"),
     email: str = typer.Option(None, "--email", help="Author email"),
-    date_str: str = typer.Option(None, "--date", help="Date to show on the paper")
+    date_str: str = typer.Option(None, "--date", help="Date to show on the paper"),
 ):
     """Generate a research paper and create/update a GitHub repository."""
     # Environment-based defaults for Markdown/LaTeX toggles
     if create_markdown is None:
-        create_markdown = os.getenv("CREATE_MARKDOWN_BY_DEFAULT", "true").lower() == "true"
+        create_markdown = (
+            os.getenv("CREATE_MARKDOWN_BY_DEFAULT", "true").lower() == "true"
+        )
     if create_latex is None:
         create_latex = os.getenv("CREATE_LATEX_BY_DEFAULT", "true").lower() == "true"
 
-    setup_pages = setup_pages if setup_pages is not None else os.getenv("ENABLE_GITHUB_PAGES", "false").lower() == "true"
-    post_social = post_social if post_social is not None else os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
+    setup_pages = (
+        setup_pages
+        if setup_pages is not None
+        else os.getenv("ENABLE_GITHUB_PAGES", "false").lower() == "true"
+    )
+    post_social = (
+        post_social
+        if post_social is not None
+        else os.getenv("ENABLE_SOCIAL_MEDIA", "false").lower() == "true"
+    )
 
     # Run the async function using asyncio
-    asyncio.run(run_generation(
-        prompt=prompt,
-        setup_pages=setup_pages,
-        post_social=post_social,
-        create_markdown=create_markdown,
-        create_latex=create_latex,
-        author=author,
-        institution=institution,
-        department=department,
-        email=email,
-        date_str=date_str
-    ))
+    asyncio.run(
+        run_generation(
+            prompt=prompt,
+            setup_pages=setup_pages,
+            post_social=post_social,
+            create_markdown=create_markdown,
+            create_latex=create_latex,
+            author=author,
+            institution=institution,
+            department=department,
+            email=email,
+            date_str=date_str,
+        )
+    )
+
 
 @app.command()
 def configure():
     """Configure the AI Preprint Generator settings."""
     pass
+
 
 if __name__ == "__main__":
     app()
