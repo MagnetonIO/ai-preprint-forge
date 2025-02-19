@@ -6,6 +6,7 @@ import requests
 from datetime import datetime, timedelta
 from .base import SocialMediaPlatform, logger
 
+
 class FacebookPlatform(SocialMediaPlatform):
     def __init__(self):
         super().__init__()
@@ -26,11 +27,7 @@ class FacebookPlatform(SocialMediaPlatform):
             logger.info(f"Checking page access with URL: {url}")
 
             response = requests.get(
-                url,
-                params={
-                    "access_token": token,
-                    "fields": "name,access_token"
-                }
+                url, params={"access_token": token, "fields": "name,access_token"}
             )
 
             if not response.ok:
@@ -39,12 +36,14 @@ class FacebookPlatform(SocialMediaPlatform):
                 return False
 
             page_data = response.json()
-            logger.info(f"Successfully accessed page: {page_data.get('name', 'UNKNOWN')}")
+            logger.info(
+                f"Successfully accessed page: {page_data.get('name', 'UNKNOWN')}"
+            )
             return True
 
         except requests.RequestException as e:
             logger.error(f"Page access check failed: {str(e)}")
-            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+            if hasattr(e, "response") and hasattr(e.response, "text"):
                 logger.error(f"Error details: {e.response.text}")
             return False
         except Exception as e:
@@ -74,7 +73,9 @@ class FacebookPlatform(SocialMediaPlatform):
                 logger.info("Facebook page posting configured successfully")
                 return True
 
-            logger.error("Could not configure Facebook page posting - check permissions")
+            logger.error(
+                "Could not configure Facebook page posting - check permissions"
+            )
             return False
 
         except Exception as e:
@@ -92,11 +93,7 @@ class FacebookPlatform(SocialMediaPlatform):
             logger.info(f"Posting to URL: {url}")  # Add logging to verify URL
             # For page posting, use data parameter instead of params
             response = requests.post(
-                url,
-                data={
-                    "access_token": self.access_token,
-                    "message": message
-                }
+                url, data={"access_token": self.access_token, "message": message}
             )
 
             if not response.ok:
@@ -111,7 +108,7 @@ class FacebookPlatform(SocialMediaPlatform):
 
         except requests.RequestException as e:
             logger.error(f"Facebook API Error during posting: {str(e)}")
-            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+            if hasattr(e, "response") and hasattr(e.response, "text"):
                 logger.error(f"Error details: {e.response.text}")
             return False
         except Exception as e:

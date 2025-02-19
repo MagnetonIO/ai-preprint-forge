@@ -2,6 +2,7 @@ import os
 from linkedin_api import Linkedin
 from .base import SocialMediaPlatform, logger
 
+
 class LinkedInPlatform(SocialMediaPlatform):
     def __init__(self):
         super().__init__()
@@ -14,8 +15,7 @@ class LinkedInPlatform(SocialMediaPlatform):
 
         try:
             self.api = Linkedin(
-                os.getenv("LINKEDIN_CLIENT_ID"),
-                os.getenv("LINKEDIN_CLIENT_SECRET")
+                os.getenv("LINKEDIN_CLIENT_ID"), os.getenv("LINKEDIN_CLIENT_SECRET")
             )
             self.configured = True
             logger.info("LinkedIn API configured successfully")

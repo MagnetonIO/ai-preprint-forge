@@ -291,15 +291,35 @@ class AIPreprintGenerator:
         project_dir = self.base_dir / paper_name
         project_dir.mkdir(exist_ok=True)
 
+        # Check and handle Markdown file
         if md_content:
             md_file = project_dir / f"{paper_name}.md"
-            md_file.write_text(md_content, encoding="utf-8")
-            logger.info(f"Updated Markdown file at {md_file}")
+            if md_file.exists():
+                logger.info(f"Markdown file already exists at {md_file}")
+                recreate = typer.confirm("Markdown file already exists. Would you like to recreate it?", default=False)
+                if recreate:
+                    md_file.write_text(md_content, encoding="utf-8")
+                    logger.info(f"Updated Markdown file at {md_file}")
+                else:
+                    logger.info("Skipping Markdown file creation")
+            else:
+                md_file.write_text(md_content, encoding="utf-8")
+                logger.info(f"Created new Markdown file at {md_file}")
 
+        # Check and handle LaTeX file
         if latex_content:
             tex_file = project_dir / f"{paper_name}.tex"
-            tex_file.write_text(latex_content, encoding="utf-8")
-            logger.info(f"Updated LaTeX file at {tex_file}")
+            if tex_file.exists():
+                logger.info(f"LaTeX file already exists at {tex_file}")
+                recreate = typer.confirm("LaTeX file already exists. Would you like to recreate it?", default=False)
+                if recreate:
+                    tex_file.write_text(latex_content, encoding="utf-8")
+                    logger.info(f"Updated LaTeX file at {tex_file}")
+                else:
+                    logger.info("Skipping LaTeX file creation")
+            else:
+                tex_file.write_text(latex_content, encoding="utf-8")
+                logger.info(f"Created new LaTeX file at {tex_file}")
 
         return project_dir, paper_name
 
@@ -463,15 +483,15 @@ class AIPreprintGenerator:
             logger.error(f"Error posting to social media: {e}")
 
 async def run_generation(prompt: str,
-                       setup_pages: bool,
-                       post_social: bool,
-                       create_markdown: bool,
-                       create_latex: bool,
-                       author: str,
-                       institution: str,
-                       department: str,
-                       email: str,
-                       date_str: str):
+                      setup_pages: bool,
+                      post_social: bool,
+                      create_markdown: bool,
+                      create_latex: bool,
+                      author: str,
+                      institution: str,
+                      department: str,
+                      email: str,
+                      date_str: str):
     """Main function to handle the paper generation process."""
     # Fallback to .env if not provided
     if not author:
@@ -487,6 +507,25 @@ async def run_generation(prompt: str,
 
     try:
         generator = AIPreprintGenerator()
+
+        # Check if files already exist for this prompt
+        existing_name = generator.name_tracker.get_existing_name(prompt)
+        if existing_name:
+            project_dir = generator.base_dir / existing_name
+            md_exists = (project_dir / f"{existing_name}.md").exists()
+            tex_exists = (project_dir / f"{existing_name}.tex").exists()
+
+            if md_exists and create_markdown:
+                logger.info("Markdown file already exists")
+                create_markdown = typer.confirm("Markdown file exists. Generate new version?", default=False)
+
+            if tex_exists and create_latex:
+                logger.info("LaTeX file already exists")
+                create_latex = typer.confirm("LaTeX file exists. Generate new version?", default=False)
+
+            if not (create_markdown or create_latex):
+                logger.info("No new files to generate. Proceeding with repository operations.")
+
         result = await generator.generate_paper(
             prompt=prompt,
             setup_pages=setup_pages,
@@ -500,7 +539,7 @@ async def run_generation(prompt: str,
             date_str=date_str
         )
 
-        logger.info(f"Successfully created paper '{result['paper_name']}' at {result['repo_url']}")
+        logger.info(f"Successfully created/updated paper '{result['paper_name']}' at {result['repo_url']}")
         logger.info(f"Local directory: {result['project_dir']}")
 
         return result

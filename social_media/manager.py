@@ -9,6 +9,7 @@ from .facebook import FacebookPlatform
 
 logger = logging.getLogger(__name__)
 
+
 class SocialMediaManager:
     """Manages multiple social media platform implementations."""
 
@@ -30,7 +31,10 @@ class SocialMediaManager:
             self.platforms.append(LinkedInPlatform())
 
         # Facebook (checks its own FACEBOOK_POST_TO_PAGE setting)
-        if global_enabled or os.getenv("FACEBOOK_POST_TO_PAGE", "false").lower() == "true":
+        if (
+            global_enabled
+            or os.getenv("FACEBOOK_POST_TO_PAGE", "false").lower() == "true"
+        ):
             self.platforms.append(FacebookPlatform())
 
         # Set up enabled platforms
@@ -57,7 +61,9 @@ class SocialMediaManager:
         active_platforms = [p for p in self.platforms if p.enabled and p.configured]
 
         if not active_platforms:
-            logger.warning("No active social media platforms found. Check your platform settings and tokens.")
+            logger.warning(
+                "No active social media platforms found. Check your platform settings and tokens."
+            )
             return False
 
         for platform in active_platforms:
@@ -68,6 +74,8 @@ class SocialMediaManager:
                 if platform != active_platforms[-1]:  # Don't delay after last platform
                     time.sleep(self.post_delay)
             except Exception as e:
-                logger.error(f"Error posting to {platform.__class__.__name__}: {str(e)}")
+                logger.error(
+                    f"Error posting to {platform.__class__.__name__}: {str(e)}"
+                )
 
         return success

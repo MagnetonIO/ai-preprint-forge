@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SocialMediaPlatform(ABC):
     """Abstract base class for social media platform implementations."""
 

@@ -2,6 +2,7 @@ import os
 import tweepy
 from .base import SocialMediaPlatform, logger
 
+
 class TwitterPlatform(SocialMediaPlatform):
     def __init__(self):
         super().__init__()
@@ -14,12 +15,11 @@ class TwitterPlatform(SocialMediaPlatform):
 
         try:
             auth = tweepy.OAuthHandler(
-                os.getenv("TWITTER_API_KEY"),
-                os.getenv("TWITTER_API_SECRET")
+                os.getenv("TWITTER_API_KEY"), os.getenv("TWITTER_API_SECRET")
             )
             auth.set_access_token(
                 os.getenv("TWITTER_ACCESS_TOKEN"),
-                os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+                os.getenv("TWITTER_ACCESS_TOKEN_SECRET"),
             )
 
             self.api = tweepy.API(auth)
