@@ -2,3 +2,4 @@
 ai_preprints/
 .venv
 __pycache__
+logs/

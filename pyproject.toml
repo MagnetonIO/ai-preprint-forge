@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "ai-preprint-forge"
+version = "1.0.0"
+description = "AI-powered framework for automated research paper generation"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11.11,<3.12"
+typer = "^0.9.0"
+python-dotenv = "^1.0.0"
+openai = "^1.3.0"
+PyGithub = "^2.1.1"
+fastapi = "^0.109.0"
+uvicorn = "^0.27.0"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+tweepy = "^4.14.0"
+linkedin-api = "^2.0.3"
+facebook-sdk = "^3.1.0"
+rich = "^13.3.1"
+structlog = "^23.1.0"
+PyLaTeX = {version = "^1.4.1"}
+Jinja2 = "^3.1.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+black = "^23.3.0"
+flake8 = "^6.1.0"
+mypy = "^1.5.1"
+pytest-asyncio = "^0.23.0"
+
+[tool.poetry.scripts]
+preprint-forge = "app.cli.commands:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
