@@ -1,0 +1,47 @@
+[Unit]
+Description=AI Preprint Forge API Service
+Documentation=https://github.com/yourusername/ai-preprint-forge
+After=network.target
+
+[Service]
+Type=exec
+User=ai-preprint-forge
+Group=ai-preprint-forge
+WorkingDirectory=/opt/ai-preprint-forge
+
+# Environment configuration
+EnvironmentFile=/etc/ai-preprint-forge/config.env
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+# Service configuration
+ExecStartPre=/usr/bin/python3 -m pip install --upgrade -r requirements.txt
+ExecStart=/usr/local/bin/uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --log-level info \
+    --access-log \
+    --use-colors
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ai-preprint-forge/ai_preprints /opt/ai-preprint-forge/logs
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=512
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ai-preprint-forge
+
+[Install]
+WantedBy=multi-user.target

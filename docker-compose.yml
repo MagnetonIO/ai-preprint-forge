@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: ai-preprint-forge-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # API Configuration
+      - APP_NAME=AI Preprint Forge
+      - DEBUG=false
+      - LOG_LEVEL=info
+      
+      # OpenAI Configuration (override with your values)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
+      
+      # GitHub Configuration (override with your values)
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      
+      # Paper Configuration
+      - BASE_DIRECTORY=/app/ai_preprints
+      - GENERATE_PDF=${GENERATE_PDF:-true}
+      - GENERATE_LATEX=${GENERATE_LATEX:-true}
+      
+      # Optional: Social Media Configuration
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - TWITTER_API_SECRET=${TWITTER_API_SECRET}
+      - LINKEDIN_ACCESS_TOKEN=${LINKEDIN_ACCESS_TOKEN}
+      - FACEBOOK_ACCESS_TOKEN=${FACEBOOK_ACCESS_TOKEN}
+    volumes:
+      # Persist generated papers
+      - ./ai_preprints:/app/ai_preprints
+      # Persist logs
+      - ./logs:/app/logs
+      # Mount local .env file if exists
+      - ./.env:/app/.env:ro
+    networks:
+      - ai-preprint-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ai-preprint-forge-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - ai-preprint-network
+    profiles:
+      - production
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: ai-preprint-forge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ai-preprint-network
+    profiles:
+      - with-cache
+
+networks:
+  ai-preprint-network:
+    driver: bridge
+
+volumes:
+  redis-data:
