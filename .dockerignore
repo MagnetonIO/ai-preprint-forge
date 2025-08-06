@@ -31,9 +31,10 @@ build/
 .gitignore
 
 # Documentation
-*.md
 docs/
 LICENSE
+# Keep README.md for pyproject.toml
+!README.md
 
 # Environment files
 .env

@@ -41,14 +41,15 @@ COPY --chown=appuser:appuser . .
 # Install the application
 RUN pip install --no-cache-dir -e .
 
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/ai_preprints /app/logs && \
+    chown -R appuser:appuser /app/ai_preprints /app/logs
+
 # Switch to non-root user
 USER appuser
 
 # Add local bin to PATH
 ENV PATH=/home/appuser/.local/bin:$PATH
-
-# Create necessary directories
-RUN mkdir -p /app/ai_preprints /app/logs
 
 # Expose port
 EXPOSE 8000
