@@ -103,9 +103,9 @@ Access the API documentation at: `http://localhost:8000/docs`
 #### Key Endpoints:
 - `GET /health` - Health check
 - `GET /ready` - Readiness check
-- `POST /api/v1/papers/generate` - Generate a new paper
-- `GET /api/v1/papers/list` - List all papers
-- `DELETE /api/v1/papers/{paper_id}` - Delete a paper
+- `POST /api/v1/papers` - Generate a new paper
+- `GET /api/v1/papers` - List all papers
+- `DELETE /api/v1/papers/{paper_name}` - Delete a paper
 
 ## Configuration
 
