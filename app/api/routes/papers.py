@@ -13,6 +13,7 @@ import logging
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 class PaperRequest(BaseModel):
     prompt: str
     setup_pages: bool = False
@@ -27,10 +28,12 @@ class PaperRequest(BaseModel):
     email: Optional[str] = None
     date_str: Optional[str] = None
 
+
 class PaperResponse(BaseModel):
     paper_name: str
     repo_url: str
     project_dir: str
+
 
 class PaperInfo(BaseModel):
     name: str
@@ -41,19 +44,20 @@ class PaperInfo(BaseModel):
     github_url: Optional[str] = None
     github_status: Optional[str] = None
 
+
 class PaperList(BaseModel):
     papers: List[PaperInfo]
     total: int
 
+
 @router.get("/", response_model=PaperList)
-async def list_papers(show_github: bool = True):
+async def list_papers(show_github: bool = True) -> PaperList:
     """List all managed papers."""
     try:
         base_dir = Path(settings.base_directory)
         if not base_dir.exists():
             raise HTTPException(
-                status_code=404,
-                detail=f"Base directory not found: {base_dir}"
+                status_code=404, detail=f"Base directory not found: {base_dir}"
             )
 
         # Get local papers
@@ -67,7 +71,7 @@ async def list_papers(show_github: bool = True):
                     has_tex=(paper_dir / f"{paper_dir.name}.tex").exists(),
                     has_pdf=(paper_dir / f"{paper_dir.name}.pdf").exists(),
                     github_url=None,
-                    github_status=None
+                    github_status=None,
                 )
                 papers.append(paper_info)
 
@@ -91,20 +95,34 @@ async def list_papers(show_github: bool = True):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error listing papers: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error listing papers: {str(e)}")
+
 
 @router.post("/", response_model=PaperResponse)
-async def generate_paper(request: PaperRequest):
+async def generate_paper(request: PaperRequest) -> PaperResponse:
     """Generate a new research paper."""
     try:
         # Set defaults from settings if not provided
-        create_markdown = request.create_markdown if request.create_markdown is not None else settings.create_markdown_by_default
-        create_latex = request.create_latex if request.create_latex is not None else settings.create_latex_by_default
-        regenerate_markdown = request.regenerate_markdown if request.regenerate_markdown is not None else settings.regenerate_existing_markdown
-        regenerate_latex = request.regenerate_latex if request.regenerate_latex is not None else settings.regenerate_existing_latex
+        create_markdown = (
+            request.create_markdown
+            if request.create_markdown is not None
+            else settings.create_markdown_by_default
+        )
+        create_latex = (
+            request.create_latex
+            if request.create_latex is not None
+            else settings.create_latex_by_default
+        )
+        regenerate_markdown = (
+            request.regenerate_markdown
+            if request.regenerate_markdown is not None
+            else settings.regenerate_existing_markdown
+        )
+        regenerate_latex = (
+            request.regenerate_latex
+            if request.regenerate_latex is not None
+            else settings.regenerate_existing_latex
+        )
 
         # Use defaults from settings for metadata if not provided
         author = request.author or settings.paper_author or ""
@@ -124,7 +142,7 @@ async def generate_paper(request: PaperRequest):
             institution=institution,
             department=department,
             email=email,
-            date_str=date_str
+            date_str=date_str,
         )
 
         return PaperResponse(**result)
@@ -132,12 +150,9 @@ async def generate_paper(request: PaperRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/{paper_name}")
-async def delete_paper(
-    paper_name: str,
-    delete_repo: bool = True,
-    force: bool = False
-):
+async def delete_paper(paper_name: str, delete_repo: bool = True, force: bool = False) -> dict:
     """Delete a paper's local directory and optionally its GitHub repository."""
     local_deleted = False
     repo_deleted = False
@@ -156,7 +171,7 @@ async def delete_paper(
                 if not force:
                     raise HTTPException(
                         status_code=500,
-                        detail=f"Error deleting local directory: {str(e)}"
+                        detail=f"Error deleting local directory: {str(e)}",
                     )
         else:
             logger.warning(f"Local directory not found: {project_dir}")
@@ -178,25 +193,21 @@ async def delete_paper(
                 if not local_deleted and not force:
                     raise HTTPException(
                         status_code=500,
-                        detail=f"Error deleting GitHub repository: {str(e)}"
+                        detail=f"Error deleting GitHub repository: {str(e)}",
                     )
 
         if not local_deleted and not repo_deleted:
             raise HTTPException(
-                status_code=404,
-                detail=f"Nothing was found to delete for {paper_name}"
+                status_code=404, detail=f"Nothing was found to delete for {paper_name}"
             )
 
         return {
             "message": f"Successfully deleted paper: {paper_name}",
             "local_deleted": local_deleted,
-            "repo_deleted": repo_deleted
+            "repo_deleted": repo_deleted,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error during deletion: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error during deletion: {str(e)}")

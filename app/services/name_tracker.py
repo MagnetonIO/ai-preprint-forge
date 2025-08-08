@@ -9,15 +9,16 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
 class NameTracker:
     """Handles tracking and reusing paper/repository names based on prompts."""
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
         self.name_cache_file = base_dir / "name_cache.json"
-        self.prompt_to_name = self._load_cache()
+        self.prompt_to_name: dict[str, str] = self._load_cache()
 
-    def _load_cache(self) -> dict:
+    def _load_cache(self) -> dict[str, str]:
         """Load existing name mappings from cache file."""
         try:
             if self.name_cache_file.exists():
@@ -28,7 +29,7 @@ class NameTracker:
             logger.error(f"Error loading name cache: {e}")
             return {}
 
-    def _save_cache(self):
+    def _save_cache(self) -> None:
         """Save current name mappings to cache file."""
         try:
             with open(self.name_cache_file, "w", encoding="utf-8") as f:
@@ -74,7 +75,7 @@ class NameTracker:
         prompt_key = self._generate_prompt_key(prompt)
         return self.prompt_to_name.get(prompt_key)
 
-    def store_name(self, prompt: str, name: str):
+    def store_name(self, prompt: str, name: str) -> None:
         """Store a new prompt-name mapping."""
         prompt_key = self._generate_prompt_key(prompt)
         self.prompt_to_name[prompt_key] = name
@@ -90,7 +91,7 @@ class NameTracker:
         md_content: Optional[str] = None,
         latex_content: Optional[str] = None,
         regenerate_markdown: bool = False,
-        regenerate_latex: bool = False
+        regenerate_latex: bool = False,
     ) -> Tuple[Path, str]:
         """Create or update project directory using tracked names."""
         try:

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class SocialMediaManager:
     """Manages multiple social media platform implementations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize platform instances based on configuration."""
         self.post_delay = int(os.getenv("SOCIAL_POST_DELAY", "300"))
         self.platforms: List[SocialMediaPlatform] = []
@@ -40,7 +40,7 @@ class SocialMediaManager:
         # Set up enabled platforms
         self._setup_platforms()
 
-    def _setup_platforms(self):
+    def _setup_platforms(self) -> None:
         """Initialize all enabled platforms."""
         for platform in self.platforms:
             if platform.enabled:

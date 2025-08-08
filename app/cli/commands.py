@@ -15,19 +15,20 @@ from app.core.logging import setup_logging
 app = typer.Typer(help="AI Preprint Forge - Generate and manage research papers")
 logger = logging.getLogger(__name__)
 
+
 @app.callback()
 def callback(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-    env: str = typer.Option(
-        "production",
-        "--env",
-        "-e",
-        help="Environment (production/development)"
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output"
     ),
-):
+    env: str = typer.Option(
+        "production", "--env", "-e", help="Environment (production/development)"
+    ),
+) -> None:
     """Setup global CLI options."""
     settings.environment = env
     setup_logging(verbose or env == "development")
+
 
 @app.command()
 def generate(
@@ -45,21 +46,39 @@ def generate(
         None, "--latex/--no-latex", help="Generate LaTeX version"
     ),
     regenerate_markdown: bool = typer.Option(
-        None, "--regenerate-md/--keep-md", help="Regenerate existing Markdown file if it exists"
+        None,
+        "--regenerate-md/--keep-md",
+        help="Regenerate existing Markdown file if it exists",
     ),
     regenerate_latex: bool = typer.Option(
-        None, "--regenerate-latex/--keep-latex", help="Regenerate existing LaTeX file if it exists"
+        None,
+        "--regenerate-latex/--keep-latex",
+        help="Regenerate existing LaTeX file if it exists",
     ),
     author: Optional[str] = typer.Option(None, "--author", help="Paper author name"),
-    institution: Optional[str] = typer.Option(None, "--institution", help="Author institution"),
-    department: Optional[str] = typer.Option(None, "--department", help="Author department"),
+    institution: Optional[str] = typer.Option(
+        None, "--institution", help="Author institution"
+    ),
+    department: Optional[str] = typer.Option(
+        None, "--department", help="Author department"
+    ),
     email: Optional[str] = typer.Option(None, "--email", help="Author email"),
-    date_str: Optional[str] = typer.Option(None, "--date", help="Date to show on the paper"),
-):
+    date_str: Optional[str] = typer.Option(
+        None, "--date", help="Date to show on the paper"
+    ),
+) -> None:
     """Generate a research paper and create/update a GitHub repository."""
     try:
-        create_markdown = create_markdown if create_markdown is not None else settings.create_markdown_by_default
-        create_latex = create_latex if create_latex is not None else settings.create_latex_by_default
+        create_markdown = (
+            create_markdown
+            if create_markdown is not None
+            else settings.create_markdown_by_default
+        )
+        create_latex = (
+            create_latex
+            if create_latex is not None
+            else settings.create_latex_by_default
+        )
 
         author = author or settings.paper_author or ""
         institution = institution or settings.paper_institution or ""
@@ -78,27 +97,32 @@ def generate(
         logger.info("🚀 Generating paper from prompt: %s", prompt)
 
         generator = PaperGenerator()
-        result = asyncio.run(generator.generate_paper(
-            prompt=prompt,
-            setup_pages=setup_pages,
-            post_social=post_social,
-            create_markdown=create_markdown,
-            create_latex=create_latex,
-            author=author,
-            institution=institution,
-            department=department,
-            email=email,
-            date_str=date_str
-        ))
+        result = asyncio.run(
+            generator.generate_paper(
+                prompt=prompt,
+                setup_pages=setup_pages,
+                post_social=post_social,
+                create_markdown=create_markdown,
+                create_latex=create_latex,
+                author=author,
+                institution=institution,
+                department=department,
+                email=email,
+                date_str=date_str,
+            )
+        )
 
         logger.info("\n✨ Paper generation complete!")
-        logger.info("📄 Paper Name: %s", result['paper_name'])
-        logger.info("🔗 Repository URL: %s", result['repo_url'])
-        logger.info("📁 Local Directory: %s", result['project_dir'])
+        logger.info("📄 Paper Name: %s", result["paper_name"])
+        logger.info("🔗 Repository URL: %s", result["repo_url"])
+        logger.info("📁 Local Directory: %s", result["project_dir"])
 
     except Exception as e:
-        logger.error("❌ Error: %s", str(e), exc_info=settings.environment == "development")
+        logger.error(
+            "❌ Error: %s", str(e), exc_info=settings.environment == "development"
+        )
         raise typer.Exit(1)
+
 
 @app.command()
 def delete(
@@ -109,7 +133,7 @@ def delete(
     force: bool = typer.Option(
         False, "--force", "-f", help="Force deletion without confirmation"
     ),
-):
+) -> None:
     """Delete a paper's local directory and optionally its GitHub repository."""
     local_deleted = False
     repo_deleted = False
@@ -122,7 +146,7 @@ def delete(
             if not force:
                 confirm = typer.confirm(
                     f"Are you sure you want to delete local directory {paper_name}?",
-                    default=False
+                    default=False,
                 )
                 if not confirm:
                     logger.info("Local directory deletion cancelled.")
@@ -147,7 +171,7 @@ def delete(
                     if not force:
                         confirm = typer.confirm(
                             f"Are you sure you want to delete the GitHub repository {paper_name}?",
-                            default=False
+                            default=False,
                         )
                         if not confirm:
                             logger.info("Repository deletion cancelled.")
@@ -175,11 +199,16 @@ def delete(
         logger.error(f"Error during deletion: {e}")
         raise typer.Exit(1)
 
+
 @app.command()
 def list(
-    show_github: bool = typer.Option(True, "--github/--no-github", help="Show GitHub repository status"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
-):
+    show_github: bool = typer.Option(
+        True, "--github/--no-github", help="Show GitHub repository status"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show detailed information"
+    ),
+) -> None:
     """List all managed papers."""
     try:
         base_dir = Path(settings.base_directory)
@@ -198,7 +227,7 @@ def list(
                     "has_tex": (paper_dir / f"{paper_dir.name}.tex").exists(),
                     "has_pdf": (paper_dir / f"{paper_dir.name}.pdf").exists(),
                     "github_url": None,
-                    "github_status": None
+                    "github_status": None,
                 }
                 papers.append(paper_info)
 
@@ -227,41 +256,45 @@ def list(
             if verbose:
                 logger.info(f"\n📄 {paper['name']}")
                 logger.info(f"  Local Path: {paper['local_path']}")
-                logger.info(f"  Files: " +
-                          f"{'MD ' if paper['has_md'] else ''}" +
-                          f"{'TEX ' if paper['has_tex'] else ''}" +
-                          f"{'PDF ' if paper['has_pdf'] else ''}")
+                logger.info(
+                    f"  Files: "
+                    + f"{'MD ' if paper['has_md'] else ''}"
+                    + f"{'TEX ' if paper['has_tex'] else ''}"
+                    + f"{'PDF ' if paper['has_pdf'] else ''}"
+                )
                 if show_github:
-                    status = paper['github_status'] or 'unknown'
+                    status = paper["github_status"] or "unknown"
                     logger.info(f"  GitHub: {status}")
-                    if paper['github_url']:
+                    if paper["github_url"]:
                         logger.info(f"  URL: {paper['github_url']}")
             else:
-                status = f" ({paper['github_status']})" if show_github and paper['github_status'] else ""
+                status = (
+                    f" ({paper['github_status']})"
+                    if show_github and paper["github_status"]
+                    else ""
+                )
                 logger.info(f"📄 {paper['name']}{status}")
 
     except Exception as e:
         logger.error(f"Error listing papers: {e}")
         raise typer.Exit(1)
 
+
 @app.command()
 def server(
     host: str = typer.Option("0.0.0.0", help="Host to bind the server to"),
     port: int = typer.Option(8000, help="Port to bind the server to"),
-    reload: bool = typer.Option(False, help="Enable auto-reload for development")
-):
+    reload: bool = typer.Option(False, help="Enable auto-reload for development"),
+) -> None:
     """Start the FastAPI server."""
     import uvicorn
+
     logger.info("🚀 Starting server on %s:%d", host, port)
-    uvicorn.run(
-        "app.main:app",
-        host=host,
-        port=port,
-        reload=reload
-    )
+    uvicorn.run("app.main:app", host=host, port=port, reload=reload)
+
 
 @app.command()
-def configure():
+def configure() -> None:
     """Configure the AI Preprint Generator settings."""
     logger.info("⚙️ Configuration wizard not yet implemented")
     logger.info("📝 Please edit your .env file directly")

@@ -6,23 +6,17 @@ from rich.logging import RichHandler
 from typing import Optional
 from app.core.config import settings
 
-def setup_logging(verbose: bool = False):
+
+def setup_logging(verbose: bool = False) -> None:
     """Configure logging with both file and console handlers."""
     # Create formatters
-    console_formatter = logging.Formatter(
-        '%(message)s',
-        datefmt='[%X]'
-    )
+    console_formatter = logging.Formatter("%(message)s", datefmt="[%X]")
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     # Setup rich console handler
-    console_handler = RichHandler(
-        rich_tracebacks=True,
-        markup=True,
-        show_time=False
-    )
+    console_handler = RichHandler(rich_tracebacks=True, markup=True, show_time=False)
     console_handler.setFormatter(console_formatter)
     console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
 
@@ -38,9 +32,7 @@ def setup_logging(verbose: bool = False):
 
     # Configure root logger
     logging.basicConfig(
-        level=logging.DEBUG if verbose else logging.INFO,
-        handlers=handlers,
-        force=True
+        level=logging.DEBUG if verbose else logging.INFO, handlers=handlers, force=True
     )
 
     # Set specific log levels for some libraries
@@ -49,6 +41,7 @@ def setup_logging(verbose: bool = False):
         logging.getLogger("github").setLevel(logging.WARNING)
         logging.getLogger("openai").setLevel(logging.INFO)
 
-def get_logger(name: str):
+
+def get_logger(name: str) -> logging.Logger:
     """Get a logger instance with the specified name."""
     return logging.getLogger(name)

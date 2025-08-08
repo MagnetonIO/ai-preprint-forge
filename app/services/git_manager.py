@@ -8,6 +8,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class GitManager:
     """Manages Git and GitHub operations for paper repositories."""
 
@@ -50,7 +51,9 @@ class GitManager:
             logger.error(f"Error in setup_repo: {e}")
             raise
 
-    async def _create_new_repo(self, project_dir: Path, paper_name: str, prompt: str) -> str:
+    async def _create_new_repo(
+        self, project_dir: Path, paper_name: str, prompt: str
+    ) -> str:
         """Create a new GitHub repository."""
         try:
             description = await self._generate_repo_description(prompt)
@@ -60,9 +63,7 @@ class GitManager:
                 description = description[:97] + "..."
 
             repo = self.user.create_repo(
-                paper_name,
-                private=not self.make_repo_public,
-                description=description
+                paper_name, private=not self.make_repo_public, description=description
             )
             repo_url = repo.clone_url
             logger.info(f"Created new repo: {paper_name}")
@@ -74,7 +75,7 @@ class GitManager:
             logger.error(f"Error creating GitHub repo: {e}")
             raise
 
-    async def _create_readme_if_missing(self, project_dir: Path, prompt: str):
+    async def _create_readme_if_missing(self, project_dir: Path, prompt: str) -> None:
         """Generate README.md if it doesn't exist."""
         readme_file = project_dir / "README.md"
         if readme_file.exists():
@@ -92,12 +93,12 @@ class GitManager:
                             "Write a professional README for a research paper repository. "
                             "Include sections: Overview, Methodology, Key Findings, "
                             "and How to Cite. Be concise and informative."
-                        )
+                        ),
                     },
                     {
                         "role": "user",
-                        "content": f"Write a README for a research paper about: {prompt}"
-                    }
+                        "content": f"Write a README for a research paper about: {prompt}",
+                    },
                 ],
                 max_tokens=500,
                 temperature=0.7,
@@ -122,12 +123,12 @@ class GitManager:
                         "content": (
                             "Generate a very short, clear description (max 90 characters) "
                             "for a GitHub repository about a research paper."
-                        )
+                        ),
                     },
                     {
                         "role": "user",
-                        "content": f"Generate a description for research about: {prompt}"
-                    }
+                        "content": f"Generate a description for research about: {prompt}",
+                    },
                 ],
                 max_tokens=50,
                 temperature=0.7,
@@ -141,7 +142,7 @@ class GitManager:
             logger.error(f"Error generating repo description: {e}")
             return "AI-generated research paper repository"
 
-    async def _ensure_gitignore(self, project_dir: Path):
+    async def _ensure_gitignore(self, project_dir: Path) -> None:
         """Create .gitignore if it doesn't exist."""
         gitignore_path = project_dir / ".gitignore"
         if not gitignore_path.exists():
@@ -166,7 +167,9 @@ class GitManager:
             gitignore_path.write_text(gitignore_content)
             logger.info("Created .gitignore")
 
-    async def _commit_and_push(self, project_dir: Path, repo_url: str, update_only: bool = False):
+    async def _commit_and_push(
+        self, project_dir: Path, repo_url: str, update_only: bool = False
+    ) -> None:
         """Handle Git operations for new or existing repos."""
         try:
             git_folder = project_dir / ".git"
@@ -176,12 +179,10 @@ class GitManager:
                 subprocess.run(
                     ["git", "remote", "add", "origin", repo_url],
                     cwd=project_dir,
-                    check=True
+                    check=True,
                 )
                 subprocess.run(
-                    ["git", "checkout", "-b", "main"],
-                    cwd=project_dir,
-                    check=True
+                    ["git", "checkout", "-b", "main"], cwd=project_dir, check=True
                 )
 
             # Ensure .gitignore is properly configured
@@ -192,19 +193,11 @@ class GitManager:
 
             commit_msg = "Update content" if update_only else "Initial commit"
             subprocess.run(
-                ["git", "commit", "-m", commit_msg],
-                cwd=project_dir,
-                check=True
+                ["git", "commit", "-m", commit_msg], cwd=project_dir, check=True
             )
+            subprocess.run(["git", "branch", "-M", "main"], cwd=project_dir, check=True)
             subprocess.run(
-                ["git", "branch", "-M", "main"],
-                cwd=project_dir,
-                check=True
-            )
-            subprocess.run(
-                ["git", "push", "-u", "origin", "main"],
-                cwd=project_dir,
-                check=True
+                ["git", "push", "-u", "origin", "main"], cwd=project_dir, check=True
             )
             logger.info("Git push successful")
 
@@ -212,7 +205,7 @@ class GitManager:
             logger.error(f"Error in Git operations: {e}")
             raise
 
-    async def setup_github_pages(self, project_dir: Path):
+    async def setup_github_pages(self, project_dir: Path) -> None:
         """Setup GitHub Pages for the repository."""
         try:
             logger.info("Setting up GitHub Pages...")
