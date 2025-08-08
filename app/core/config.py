@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore"  # Ignore extra fields in .env file
+        extra="ignore",  # Ignore extra fields in .env file
     )
 
 

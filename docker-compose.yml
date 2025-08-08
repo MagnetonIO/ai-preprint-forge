@@ -12,20 +12,20 @@ services:
       - APP_NAME=AI Preprint Forge
       - DEBUG=false
       - LOG_LEVEL=info
-      
+
       # OpenAI Configuration (override with your values)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
-      
+
       # GitHub Configuration (override with your values)
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_USERNAME=${GITHUB_USERNAME}
-      
+
       # Paper Configuration
       - BASE_DIRECTORY=/app/ai_preprints
       - GENERATE_PDF=${GENERATE_PDF:-true}
       - GENERATE_LATEX=${GENERATE_LATEX:-true}
-      
+
       # Optional: Social Media Configuration
       - TWITTER_API_KEY=${TWITTER_API_KEY}
       - TWITTER_API_SECRET=${TWITTER_API_SECRET}

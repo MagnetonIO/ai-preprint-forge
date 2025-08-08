@@ -4,6 +4,7 @@
 import shutil
 from pathlib import Path
 
+
 def create_directory_structure():
     """Create the project directory structure."""
     # Define the project structure
@@ -22,6 +23,7 @@ def create_directory_structure():
     for dir_path in directories:
         (root / dir_path).mkdir(parents=True, exist_ok=True)
 
+
 def move_files():
     """Move existing files to their new locations."""
     file_moves = [
@@ -32,11 +34,9 @@ def move_files():
         ("linkedin.py", "app/services/social_media/linkedin.py"),
         ("facebook.py", "app/services/social_media/facebook.py"),
         ("__init__.py", "app/services/social_media/__init__.py"),
-
         # Move preprint_forge.py content will be split into multiple files
         # We'll keep the original for reference
         ("preprint_forge.py", "app/services/paper_generator.py"),
-
         # Create necessary __init__.py files
         ("", "app/__init__.py"),
         ("", "app/api/__init__.py"),
@@ -59,6 +59,7 @@ def move_files():
                 print(f"Created {dest}")
         except Exception as e:
             print(f"Error moving {source} to {dest}: {e}")
+
 
 def create_additional_files():
     """Create additional necessary files if they don't exist."""
@@ -87,7 +88,6 @@ class Paper(BaseModel):
     pass
 """,
         "tests/__init__.py": "",
-}
     }
 
     for file_path, content in files_to_create.items():
@@ -96,6 +96,7 @@ class Paper(BaseModel):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
             print(f"Created {file_path}")
+
 
 def backup_existing_files():
     """Create backup of existing files."""
@@ -118,6 +119,7 @@ def backup_existing_files():
             shutil.copy2(source, backup_dir / source.name)
             print(f"Backed up {file_name}")
 
+
 def main():
     """Main function to set up the project structure."""
     print("Starting project restructuring...")
@@ -139,14 +141,17 @@ def main():
     create_additional_files()
 
     print("\nProject restructuring complete!")
-    print("""
+    print(
+        """
 Next steps:
 1. Review the backup_original_files directory to ensure all files were backed up
 2. Check the new directory structure
 3. Update import statements in moved files
 4. Run tests to ensure everything works
 5. Delete backup files if everything is working correctly
-""")
+"""
+    )
+
 
 if __name__ == "__main__":
     main()

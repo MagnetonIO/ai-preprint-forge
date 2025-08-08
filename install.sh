@@ -60,7 +60,7 @@ main() {
     if command_exists python3; then
         PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
         print_status "Found Python $PYTHON_VERSION"
-        
+
         # Check if Python version is 3.11
         if [[ ! "$PYTHON_VERSION" =~ ^3\.11 ]]; then
             print_warning "Python 3.11 is required. Current version: $PYTHON_VERSION"
@@ -123,7 +123,7 @@ main() {
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_status "Installing LaTeX dependencies..."
-        
+
         if [[ "$OS" == "linux" ]]; then
             if command_exists apt-get; then
                 sudo apt-get update
@@ -180,7 +180,7 @@ main() {
     else
         print_error "Installation verification failed"
         print_warning "You may need to add the installation directory to your PATH"
-        
+
         if [[ "$INSTALL_TYPE" == "user" ]]; then
             echo "Add this line to your ~/.bashrc or ~/.zshrc:"
             echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""

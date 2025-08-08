@@ -4,15 +4,20 @@
 from setuptools import setup, find_packages
 import os
 
+
 # Read the README file
 def read_long_description():
     with open("README.md", "r", encoding="utf-8") as fh:
         return fh.read()
 
+
 # Read requirements from requirements.txt
 def read_requirements():
     with open("requirements.txt", "r", encoding="utf-8") as fh:
-        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        return [
+            line.strip() for line in fh if line.strip() and not line.startswith("#")
+        ]
+
 
 setup(
     name="ai-preprint-forge",

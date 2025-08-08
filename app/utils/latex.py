@@ -16,6 +16,7 @@ LATEX_PREAMBLE = """\\documentclass{article}
 \\usepackage{lastpage}
 """
 
+
 def generate_pdf_from_latex(project_dir: Path, paper_name: str) -> bool:
     """
     Convert LaTeX content to PDF using pdflatex.
@@ -30,21 +31,21 @@ def generate_pdf_from_latex(project_dir: Path, paper_name: str) -> bool:
             return False
 
         # Read the original content
-        content = tex_file.read_text(encoding='utf-8')
+        content = tex_file.read_text(encoding="utf-8")
 
         # Parse and restructure the content
         restructured_content = restructure_latex_content(content)
 
         # Write the restructured content back to the file
-        tex_file.write_text(restructured_content, encoding='utf-8')
+        tex_file.write_text(restructured_content, encoding="utf-8")
 
         # Run pdflatex twice to resolve references
         for i in range(2):
             result = subprocess.run(
-                ['pdflatex', '--interaction=nonstopmode', tex_file.name],
+                ["pdflatex", "--interaction=nonstopmode", tex_file.name],
                 cwd=project_dir,
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             if result.returncode != 0:
@@ -66,6 +67,7 @@ def generate_pdf_from_latex(project_dir: Path, paper_name: str) -> bool:
         logger.error(f"Error generating PDF: {e}")
         return False
 
+
 def clean_latex_content(content: str) -> str:
     """
     Clean LaTeX content by removing markdown code block markers and other unwanted elements.
@@ -78,6 +80,7 @@ def clean_latex_content(content: str) -> str:
 
     return content
 
+
 def restructure_latex_content(content: str) -> str:
     """
     Restructure LaTeX content to ensure correct document structure.
@@ -86,7 +89,7 @@ def restructure_latex_content(content: str) -> str:
         # First clean the content
         content = clean_latex_content(content)
         # Remove any existing preamble commands
-        lines = content.split('\n')
+        lines = content.split("\n")
         cleaned_lines = []
         skip_mode = False
 
@@ -97,21 +100,21 @@ def restructure_latex_content(content: str) -> str:
 
         for line in lines:
             # Skip existing preamble commands
-            if line.strip().startswith('\\documentclass'):
+            if line.strip().startswith("\\documentclass"):
                 skip_mode = True
                 continue
-            if line.strip().startswith('\\begin{document}'):
+            if line.strip().startswith("\\begin{document}"):
                 skip_mode = False
                 continue
-            if line.strip().startswith('\\end{document}'):
+            if line.strip().startswith("\\end{document}"):
                 continue
             if skip_mode:
                 # Capture metadata while skipping preamble
-                if line.strip().startswith('\\title{'):
+                if line.strip().startswith("\\title{"):
                     title = line
-                elif line.strip().startswith('\\author{'):
+                elif line.strip().startswith("\\author{"):
                     author = line
-                elif line.strip().startswith('\\date{'):
+                elif line.strip().startswith("\\date{"):
                     date = line
                 continue
 
@@ -142,7 +145,7 @@ def restructure_latex_content(content: str) -> str:
         # End document
         new_content.append("\\end{document}")
 
-        return '\n'.join(new_content)
+        return "\n".join(new_content)
 
     except Exception as e:
         logger.error(f"Error restructuring LaTeX content: {e}")

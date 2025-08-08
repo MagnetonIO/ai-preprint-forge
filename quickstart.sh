@@ -45,7 +45,7 @@ show_menu() {
 # Setup environment configuration
 setup_env() {
     echo -e "${BLUE}Setting up environment configuration...${NC}"
-    
+
     if [ -f .env ]; then
         echo -e "${YELLOW}Existing .env file found.${NC}"
         read -p "Do you want to overwrite it? (y/n): " -n 1 -r
@@ -54,28 +54,28 @@ setup_env() {
             return
         fi
     fi
-    
+
     cp .env_teamplate .env
     echo -e "${GREEN}.env file created from template${NC}"
-    
+
     # Interactive configuration
     echo -e "${BLUE}Let's configure your API keys:${NC}"
-    
+
     read -p "Enter your OpenAI API key (or press Enter to skip): " openai_key
     if [ ! -z "$openai_key" ]; then
         sed -i.bak "s/OPENAI_API_KEY=.*/OPENAI_API_KEY=$openai_key/" .env
     fi
-    
+
     read -p "Enter your GitHub token (or press Enter to skip): " github_token
     if [ ! -z "$github_token" ]; then
         sed -i.bak "s/GITHUB_TOKEN=.*/GITHUB_TOKEN=$github_token/" .env
     fi
-    
+
     read -p "Enter your GitHub username (or press Enter to skip): " github_user
     if [ ! -z "$github_user" ]; then
         sed -i.bak "s/GITHUB_USERNAME=.*/GITHUB_USERNAME=$github_user/" .env
     fi
-    
+
     rm -f .env.bak
     echo -e "${GREEN}Configuration saved to .env${NC}"
 }
@@ -83,7 +83,7 @@ setup_env() {
 # Local development setup
 setup_local() {
     echo -e "${BLUE}Setting up local development environment...${NC}"
-    
+
     if command_exists poetry; then
         echo "Installing dependencies with Poetry..."
         poetry install
@@ -100,7 +100,7 @@ setup_local() {
 # System installation
 setup_system() {
     echo -e "${BLUE}Installing AI Preprint Forge system-wide...${NC}"
-    
+
     if [ -f install.sh ]; then
         bash install.sh
     else
@@ -112,13 +112,13 @@ setup_system() {
 # Docker deployment
 setup_docker() {
     echo -e "${BLUE}Deploying with Docker...${NC}"
-    
+
     if ! command_exists docker; then
         echo -e "${RED}Docker is not installed. Please install Docker first.${NC}"
         echo "Visit: https://docs.docker.com/get-docker/"
         return
     fi
-    
+
     if [ -f deploy/scripts/deploy-docker.sh ]; then
         bash deploy/scripts/deploy-docker.sh
     else
@@ -138,7 +138,7 @@ setup_production() {
     echo "2) Docker Compose"
     echo "3) Cancel"
     read -p "Enter choice [1-3]: " prod_choice
-    
+
     case $prod_choice in
         1)
             if [ -f deploy/systemd/install-service.sh ]; then
@@ -163,7 +163,7 @@ setup_production() {
 # Run tests
 run_tests() {
     echo -e "${BLUE}Running tests...${NC}"
-    
+
     if command_exists pytest; then
         pytest --cov=app
     else
@@ -176,16 +176,16 @@ run_tests() {
 # Main execution
 main() {
     show_banner
-    
+
     # Check Python version
     PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
     if [[ ! "$PYTHON_VERSION" =~ ^3\.11 ]]; then
         echo -e "${YELLOW}Warning: Python 3.11 is recommended. Found: $PYTHON_VERSION${NC}"
     fi
-    
+
     while true; do
         show_menu
-        
+
         case $choice in
             1)
                 setup_local
@@ -213,7 +213,7 @@ main() {
                 echo -e "${RED}Invalid choice. Please try again.${NC}"
                 ;;
         esac
-        
+
         echo
         read -p "Press Enter to continue..."
         clear
