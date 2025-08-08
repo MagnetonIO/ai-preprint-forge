@@ -1,6 +1,7 @@
 # app/services/paper_generator.py
 from pathlib import Path
 from typing import Optional, Dict, Any
+import asyncio
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.services.name_tracker import NameTracker
@@ -11,8 +12,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class PaperGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         self.model = settings.openai_model
         self.base_dir = Path(settings.base_directory)
@@ -42,13 +44,7 @@ class PaperGenerator:
             )
 
             user_instruction = self._create_user_instruction(
-                prompt,
-                output_format,
-                author,
-                institution,
-                department,
-                email,
-                date_str
+                prompt, output_format, author, institution, department, email, date_str
             )
 
             response = await self.client.chat.completions.create(
@@ -124,15 +120,21 @@ class PaperGenerator:
         """Main method to generate the paper and handle all related tasks."""
         try:
             # Generate content if requested
-            md_content = await self.generate_content(
-                prompt, "markdown",
-                author, institution, department, email, date_str
-            ) if create_markdown else None
+            md_content = (
+                await self.generate_content(
+                    prompt, "markdown", author, institution, department, email, date_str
+                )
+                if create_markdown
+                else None
+            )
 
-            latex_content = await self.generate_content(
-                prompt, "latex",
-                author, institution, department, email, date_str
-            ) if create_latex else None
+            latex_content = (
+                await self.generate_content(
+                    prompt, "latex", author, institution, department, email, date_str
+                )
+                if create_latex
+                else None
+            )
 
             # Set up project and files
             project_dir, paper_name = await self.name_tracker.setup_project(
@@ -140,7 +142,7 @@ class PaperGenerator:
                 md_content=md_content,
                 latex_content=latex_content,
                 regenerate_markdown=settings.regenerate_existing_markdown,
-                regenerate_latex=settings.regenerate_existing_latex
+                regenerate_latex=settings.regenerate_existing_latex,
             )
 
             # Generate PDF if LaTeX was created
@@ -158,15 +160,18 @@ class PaperGenerator:
 
             # Handle social media if requested
             if post_social and self.social_media:
-                await self.social_media.post_update(
-                    f"New AI-generated paper '{paper_name}' is now available! "
-                    f"Check it out: {repo_url}"
+                await asyncio.to_thread(
+                    self.social_media.post_update,
+                    (
+                        f"New AI-generated paper '{paper_name}' is now available! "
+                        f"Check it out: {repo_url}"
+                    ),
                 )
 
             return {
                 "paper_name": paper_name,
                 "repo_url": repo_url,
-                "project_dir": str(project_dir)
+                "project_dir": str(project_dir),
             }
 
         except Exception as e:
