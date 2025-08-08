@@ -3,3 +3,25 @@ ai_preprints/
 .venv
 __pycache__
 logs/
+
+# OS/editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# Caches and test artifacts
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+
+# Local AI/agent configs
+.claude/
+
+# Local logs
+precommit_output*.txt
